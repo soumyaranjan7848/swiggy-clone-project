@@ -1,0 +1,58 @@
+# =========================
+# Node.js
+# =========================
+node_modules/
+.pnp/
+.pnp.js
+coverage/
+build/
+
+# =========================
+# Environment Variables
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs
+# =========================
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Terraform
+# =========================
+.terraform/
+*.tfstate
+*.tfstate.backup
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# =========================
+# Docker
+# =========================
+*.tar
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# Misc
+# =========================
+*.swp
