@@ -57,7 +57,7 @@ pipeline {
             steps {
                 sh """
                 docker run --rm \
-                -v $(pwd):/project \
+                -v ${WORKSPACE}:/project \
                 -w /project \
                 aquasec/trivy fs . > trivyfs.txt
                 """
