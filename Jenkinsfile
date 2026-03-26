@@ -55,8 +55,13 @@ pipeline {
 
         stage('Trivy FS Scan') {
             steps {
-                sh 'trivy fs . > trivyfs.txt'
-            }
+                sh """
+                docker run --rm \
+                -v $(pwd):/project \
+                -w /project \
+                aquasec/trivy fs . > trivyfs.txt
+                """
+           }
         }
 
         stage('Docker Build & Push') {
@@ -76,7 +81,11 @@ pipeline {
 
         stage('Trivy Image Scan') {
             steps {
-                sh "trivy image $IMAGE_NAME:$IMAGE_TAG > trivyimage.txt"
+                sh """
+                docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy image $IMAGE_NAME:$IMAGE_TAG > trivyimage.txt
+                """
             }
         }
 
