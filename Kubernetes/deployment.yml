@@ -3,20 +3,19 @@ kind: Deployment
 metadata:
   name: swiggy-deployment
   labels:
-    app: swiggy-app
+    app: swiggy
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: swiggy-app
+      app: swiggy
   template:
     metadata:
       labels:
-        app: swiggy-app
+        app: swiggy
     spec:
       containers:
-        - name: swiggy-container
-          image: soumyahub54/swiggy-clone:latest
-          ports:
-            - containerPort: 3000
-          command: ["npx", "serve", "-s", "build", "-l", "3000"]
+      - name: swiggy-container
+        image: soumyahub54/swiggy-clone:latest
+        ports:
+        - containerPort: 3000
