@@ -22,7 +22,9 @@ pipeline {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/soumyaranjan7848/swiggy-clone-project.git'
+                git branch: 'main',
+                    url: 'https://github.com/soumyaranjan7848/swiggy-clone-project.git',
+                    credentialsId: 'Github-Credential'
             }
         }
 
@@ -48,32 +50,34 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                sh '''
+                npm install
+                npm audit fix || true
+                '''
             }
         }
 
-
         stage('Trivy FS Scan') {
             steps {
-                sh """
+                sh '''
                 docker run --rm \
-                -v ${WORKSPACE}:/project \
+                -v "$PWD:/project" \
                 -w /project \
-                aquasec/trivy fs . > trivyfs.txt
-                """
-           }
+                aquasec/trivy fs --severity HIGH,CRITICAL . > trivyfs.txt
+                '''
+            }
         }
 
         stage('Docker Build & Push') {
             steps {
                 script {
                     withDockerRegistry(credentialsId: 'Dockerhub-Credential') {
-                        sh """
+                        sh '''
                         docker build -t $IMAGE_NAME:$IMAGE_TAG .
                         docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
                         docker push $IMAGE_NAME:$IMAGE_TAG
                         docker push $IMAGE_NAME:latest
-                        """
+                        '''
                     }
                 }
             }
@@ -81,20 +85,20 @@ pipeline {
 
         stage('Trivy Image Scan') {
             steps {
-                sh """
+                sh '''
                 docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
-                aquasec/trivy image $IMAGE_NAME:$IMAGE_TAG > trivyimage.txt
-                """
+                aquasec/trivy image --severity HIGH,CRITICAL $IMAGE_NAME:$IMAGE_TAG > trivyimage.txt
+                '''
             }
         }
 
         stage('Update Deployment Image') {
             steps {
                 dir('Kubernetes') {
-                   sh """
-                   sed -i 's|image:.*|image: $IMAGE_NAME:$IMAGE_TAG|' deployment.yml
-                   """
+                    sh '''
+                    sed -i "s|image:.*|image: $IMAGE_NAME:$IMAGE_TAG|" deployment.yml
+                    '''
                 }
             }
         }
@@ -104,10 +108,10 @@ pipeline {
                 dir('Kubernetes') {
                     script {
                         kubeconfig(credentialsId: 'kubernetes') {
-                            sh """
+                            sh '''
                             kubectl apply -f deployment.yml
                             kubectl apply -f service.yml
-                            """
+                            '''
                         }
                     }
                 }
@@ -115,4 +119,12 @@ pipeline {
         }
     }
 
+    post {
+        success {
+            echo "✅ Pipeline executed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs."
+        }
+    }
 }

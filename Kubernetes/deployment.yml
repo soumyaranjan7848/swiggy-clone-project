@@ -1,23 +1,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: swiggy-app
+  name: swiggy-deployment
   labels:
-    app: swiggy-app
+    app: swiggy
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: swiggy-app
+      app: swiggy
   template:
     metadata:
       labels:
-        app: swiggy-app
+        app: swiggy
     spec:
-      terminationGracePeriodSeconds: 30
       containers:
-      - name: swiggy-app
-        image: souymahub54/swiggy-clone:latest
-        imagePullPolicy: "Always"
+      - name: swiggy-container
+        image: soumyahub54/swiggy-clone:latest   # 👈 IMPORTANT (will be replaced by Jenkins)
         ports:
         - containerPort: 3000
