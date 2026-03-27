@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: swiggy-app
   labels:
-    app: swiggy-app
+    app: swiggy
 spec:
   type: LoadBalancer
   ports:
   - port: 80
     targetPort: 3000
   selector:
-    app: swiggy-app
+    app: swiggy
