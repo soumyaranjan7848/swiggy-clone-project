@@ -10,6 +10,8 @@ pipeline {
         SCANNER_HOME = tool 'sonarqube-scanner'
         IMAGE_NAME = "soumyahub54/swiggy-clone"
         IMAGE_TAG = "${BUILD_NUMBER}"
+        DOCKER_REGISTRY_CRED = 'Dockerhub-Credential'
+        KUBE_CRED = 'kubernetes'
     }
 
     stages {
@@ -43,7 +45,7 @@ pipeline {
         stage('Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: false
+                    waitForQualityGate abortPipeline: true
                 }
             }
         }
@@ -60,10 +62,11 @@ pipeline {
         stage('Trivy FS Scan') {
             steps {
                 sh '''
+                docker pull ghcr.io/aquasecurity/trivy:latest
                 docker run --rm \
-                -v "$PWD:/project" \
+                -v "${WORKSPACE}:/project" \
                 -w /project \
-                aquasec/trivy fs --severity HIGH,CRITICAL . > trivyfs.txt
+                ghcr.io/aquasecurity/trivy:latest fs --severity HIGH,CRITICAL . > trivyfs.txt || true
                 '''
             }
         }
@@ -71,7 +74,7 @@ pipeline {
         stage('Docker Build & Push') {
             steps {
                 script {
-                    withDockerRegistry(credentialsId: 'Dockerhub-Credential') {
+                    withDockerRegistry(credentialsId: DOCKER_REGISTRY_CRED) {
                         sh '''
                         docker build -t $IMAGE_NAME:$IMAGE_TAG .
                         docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest
@@ -86,9 +89,10 @@ pipeline {
         stage('Trivy Image Scan') {
             steps {
                 sh '''
+                docker pull ghcr.io/aquasecurity/trivy:latest
                 docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
-                aquasec/trivy image --severity HIGH,CRITICAL $IMAGE_NAME:$IMAGE_TAG > trivyimage.txt
+                ghcr.io/aquasecurity/trivy:latest image --severity HIGH,CRITICAL $IMAGE_NAME:$IMAGE_TAG > trivyimage.txt || true
                 '''
             }
         }
@@ -106,13 +110,11 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 dir('Kubernetes') {
-                    script {
-                        kubeconfig(credentialsId: 'kubernetes') {
-                            sh '''
-                            kubectl apply -f deployment.yml
-                            kubectl apply -f service.yml
-                            '''
-                        }
+                    withKubeConfig([credentialsId: KUBE_CRED]) {
+                        sh '''
+                        kubectl apply -f deployment.yml
+                        kubectl apply -f service.yml
+                        '''
                     }
                 }
             }
